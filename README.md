@@ -24,12 +24,22 @@ This is an Android application project ready to build APK files.
 
 4. Your APK will be at: `app/build/outputs/apk/debug/app-debug.apk`
 
+## GitHub Actions - Automatic APK Build
+
+Your project now builds automatically using GitHub Actions! Every push triggers an automatic APK build.
+
+### Download Your Built APK:
+1. Go to the **Actions** tab in your GitHub repository
+2. Click on the latest workflow run
+3. Scroll down to **Artifacts**
+4. Download **app-debug.apk** 📱
+
 ## Adding Your Code
 
 1. Replace `MainActivity.java` with your Java/Kotlin code in `app/src/main/java/com/voidsapk/app/`
 2. Add your resources (layouts, drawables, etc.) in `app/src/main/res/`
 3. Update `AndroidManifest.xml` if needed
-4. Run build command
+4. Push to GitHub - APK builds automatically!
 
 ## Project Structure
 
