@@ -29,9 +29,22 @@ jobs:
           path: |
             ~/.gradle/caches
             ~/.gradle/wrapper
-          key: ${{ runner.OS }}-gradle-${{ hashFiles('voidsapk-project/**/gradle-wrapper.properties') }}
+          key: ${{ runner.OS }}-gradle-${{ hashFiles('**/gradle-wrapper.properties') }}
           restore-keys: |
             ${{ runner.OS }}-gradle-
+
+      - name: Unpack voidsapk.zip
+        run: |
+          set -e
+          if [ -f voidsapk.zip ]; then
+            echo "Unzipping voidsapk.zip..."
+            unzip -q voidsapk.zip -d .
+            ls -la
+          else
+            echo "voidsapk.zip not found in repo root"
+            ls -la
+            exit 1
+          fi
 
       - name: Install Android SDK commandline-tools
         run: |
@@ -48,18 +61,38 @@ jobs:
           yes | sdkmanager --sdk_root="$ANDROID_SDK_ROOT" --licenses || true
           sdkmanager --sdk_root="$ANDROID_SDK_ROOT" "platform-tools" "platforms;android-33" "build-tools;33.0.2"
 
-      - name: Make Gradle wrapper executable
-        run: |
-          if [ -f voidsapk-project/gradlew ]; then chmod +x voidsapk-project/gradlew; fi
-
       - name: Build APK (Debug)
-        working-directory: voidsapk-project
         run: |
           set -e
-          ./gradlew assembleDebug --no-daemon --stacktrace
+          PROJECT_DIR=voidsapk-project
+          if [ ! -d "$PROJECT_DIR" ]; then
+            # if project folder name differs, try to detect
+            FOUND=$(ls -d */ | grep -i voidsapk || true)
+            if [ -n "$FOUND" ]; then
+              PROJECT_DIR=${FOUND%/}
+            fi
+          fi
+          echo "Project dir: $PROJECT_DIR"
+          if [ ! -d "$PROJECT_DIR" ]; then
+            echo "Project directory not found, aborting."
+            ls -la
+            exit 1
+          fi
+
+          if [ -f "$PROJECT_DIR/gradlew" ]; then
+            chmod +x "$PROJECT_DIR/gradlew"
+            cd "$PROJECT_DIR"
+            ./gradlew assembleDebug --no-daemon --stacktrace
+          else
+            echo "gradlew not found, installing system gradle as fallback..."
+            sudo apt-get update -y
+            sudo apt-get install -y gradle unzip
+            cd "$PROJECT_DIR"
+            gradle assembleDebug --no-daemon --stacktrace
+          fi
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: voidsapk-apks
-          path: voidsapk-project/app/build/outputs/apk/**/*.apk
+          path: '**/build/outputs/apk/**/*.apk'
